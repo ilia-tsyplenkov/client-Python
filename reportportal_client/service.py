@@ -13,15 +13,19 @@
 #  limitations under the License.
 
 
+import uuid
+import logging
+import time
 import collections
 import json
 import requests
-import uuid
-import logging
 
 from requests.adapters import HTTPAdapter
 
 from .errors import ResponseError, EntryCreatedError, OperationCompletionError
+
+UNIQ_ID = uuid.uuid4()
+LOG_FILE = "/tmp/%s_start_launch.log" % UNIQ_ID
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -149,7 +153,12 @@ class ReportPortalService(object):
             "mode": mode
         }
         url = uri_join(self.base_url, "launch")
+
+        req_start_time = time.time()
         r = self.session.post(url=url, json=data, verify=self.verify_ssl)
+        req_duration = time.time() - req_start_time
+        with open(LOG_FILE, "a") as f:
+            f.write("%s\n" % req_duration)
         self.launch_id = _get_id(r)
         self.stack.append(None)
         logger.debug("start_launch - Stack: %s", self.stack)
